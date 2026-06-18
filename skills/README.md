@@ -8,7 +8,7 @@ Skills should encode process, review standards, and execution patterns. They sho
 
 - `product-review`
 - `eng-review`
-- `persona-fidelity-review`
+- `domain-integrity-review`
 - `security-review`
 - `browser-qa`
 - `vpc-deploy-review`

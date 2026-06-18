@@ -1,22 +1,12 @@
-# KishoreStack: AI Engineering Workflow for EchoPersona / Living Forever AI
+# KishoreStack: AI Engineering Workflow
 
 ## 1. Purpose
 
-This document defines the AI-assisted engineering workflow for EchoPersona / Living Forever AI.
+This document defines the AI-assisted engineering workflow for projects using kstack.
 
 The goal is not to use AI agents as autocomplete. The goal is to operate AI agents like a small engineering team while keeping the human in control of product judgment, architecture decisions, security decisions, and final shipping.
 
-This workflow borrows the best ideas from Blueprint, gstack, Claude Code, Codex, CodeGraph, and Conductor, but adapts them to this project.
-
-For this repo, correctness matters more than raw speed because the product handles:
-
-* personal memories
-* voice/persona identity
-* family access
-* consent and succession
-* private user data
-* posthumous or legacy interactions
-* real-time conversations
+This workflow borrows the best ideas from Blueprint, gstack, Claude Code, Codex, CodeGraph, and Conductor, and is designed to be adapted to each consumer project.
 
 A fast AI workflow is useful only if it produces reliable, reviewable, and trustworthy changes.
 
@@ -40,94 +30,77 @@ Every meaningful change should have:
 6. Review before commit
 7. Progress update
 
-Do not ask an agent to “just build the feature” unless the feature is small and low-risk.
+Do not ask an agent to "just build the feature" unless the feature is small and low-risk.
 
 ---
 
 ## 3. Project-Specific Non-Negotiables
 
-These rules override generic AI-agent workflows.
+These rules are defined per consumer project and override generic AI-agent workflows. Consumer projects must define their own version of this section in their `AGENTS.md` or `CLAUDE.md`.
+
+A consumer project's non-negotiables should cover:
 
 ### Product/runtime rules
 
+Define constraints specific to your product's reliability, correctness, and user trust requirements. Examples:
+
 * No autonomous agents in the live product runtime.
 * No unbounded agent loops in user-facing flows.
-* Live reply path must stay low-latency.
-* Persona replies must not fabricate facts outside verified memory.
-* Ingestion and memory transformation happen off the hot path.
-* Persona memory must remain auditable through provenance.
-* Corrections must preserve history instead of overwriting it.
-* Consent and succession decisions must be explicit, reviewable, and reversible where appropriate.
+* Data mutations must be auditable.
+* Domain-critical logic must not produce results outside verified sources.
 
 ### Infrastructure rules
 
-* Primary deployment target is private VPC / VPS with Docker Compose and nginx.
-* Vercel/Render are secondary or experimental only unless explicitly changed.
-* Supabase is used for auth, Postgres, and storage.
-* Redis and arq worker are part of the real ingestion architecture.
-* No paid APIs unless explicitly approved.
-* Groq free tier is the default LLM/STT/vision provider.
-* ElevenLabs and D-ID/Tavus are optional media layers.
-* Stripe setup is paused unless explicitly resumed.
+Define your deployment target, required services, approved external APIs, and any cost constraints. Examples:
+
+* Primary deployment target (cloud provider, container platform, managed service, etc.)
+* Required backing services (database, cache, queue, etc.)
+* Approved and forbidden external APIs
+* Cost guardrails
 
 ### Safety rules
 
+Define the actions agents must never take without explicit human approval. Examples:
+
 * Do not touch migrations without explicit approval.
-* Do not touch RLS/security policies without explicit approval.
+* Do not touch auth/security policies without explicit approval.
 * Do not touch billing/webhook logic without explicit approval.
-* Do not touch WebSocket auth/live path without explicit approval.
 * Do not run destructive commands without asking.
 * Do not force-push unless explicitly instructed.
 * Do not create large multi-file changes without a plan.
-* Do not edit unrelated files to “clean things up” during a feature slice.
+* Do not edit unrelated files to "clean things up" during a feature slice.
 
 ---
 
 ## 4. Source-of-Truth Files
 
-Agents must read the right source files before starting.
+Agents must read the right source files before starting. Consumer projects should define their own list. A typical set includes:
 
 ### Always read
 
 ```txt
-CLAUDE.md
+CLAUDE.md (or AGENTS.md)
 PROGRESS.md
 README.md
 ```
 
-### Persona, memory, ingestion, retrieval
+### Domain-critical paths
 
-```txt
-PERSONA_SPEC.md
-backend/services/creation.py
-backend/services/ingestion/
-backend/worker/tasks/ingestion.py
-backend/services/rag.py
-backend/models/
-backend/migrations/
-```
+List the files that define your project's core domain logic, data models, and configuration. This will vary by project.
 
 ### Deployment
 
 ```txt
-docker-compose.yml
-backend/Dockerfile
-frontend/Dockerfile
-nginx config
+docker-compose.yml (or equivalent)
+Dockerfile(s)
+reverse-proxy config
 docs/runbook.md
-backend/.env.example
-frontend/.env.example
+.env.example files
 ```
 
-### Frontend and demo flow
+### Application entry points
 
-```txt
-frontend/src/router.tsx
-frontend/src/pages/
-frontend/src/components/
-frontend/src/lib/api.ts
-frontend/src/constants.ts
-```
+List your project's key routing, page, and API files here.
 
 ---
 
@@ -136,18 +109,14 @@ frontend/src/constants.ts
 Create or update a spec when the work touches:
 
 * database schema
-* auth
-* RLS
-* consent
-* succession
-* billing
-* WebSocket/live path
-* ingestion
-* persona memory
-* retrieval
-* correction/versioning
+* auth or access control
+* billing or payments
+* real-time or live-path logic
+* data ingestion or transformation
+* domain-critical retrieval or ranking
+* correction or versioning logic
 * deployment architecture
-* multiple frontend/backend flows
+* multiple interconnected flows
 
 A spec should include:
 
@@ -198,7 +167,7 @@ A good slice:
 ```txt
 Add one backend service + tests
 Add one endpoint + tests
-Add one frontend page polish
+Add one frontend page or component
 Add one migration + model update
 Add one deployment doc correction
 ```
@@ -206,10 +175,10 @@ Add one deployment doc correction
 A bad slice:
 
 ```txt
-Build correction loop + consent + UI + deployment together
+Build multiple interconnected features together
 Refactor backend while adding a feature
-Touch billing while fixing persona creation
-Change schema, retrieval, and WebSocket logic in one pass
+Touch billing while fixing unrelated logic
+Change schema, retrieval, and live-path logic in one pass
 ```
 
 During implementation:
@@ -224,50 +193,46 @@ During implementation:
 
 ## 8. Testing and Verification
 
+Consumer projects should define their own test commands. The general pattern:
+
 ### Backend
 
 ```bash
-cd backend
-python -m pytest tests/ -q
+# Run project backend tests
+<project test command>
 ```
 
 ### Frontend
 
 ```bash
-cd frontend
-npx tsc --noEmit
-npm run build
+# Run type checks and build
+<project type check command>
+<project build command>
 ```
 
-### Docker/VPC
+### Deployment
 
 ```bash
-docker compose config
-docker compose build
-docker compose up -d
-curl https://kishoreai.online/health
+# Validate and start services
+<project compose or deploy command>
+curl <project health endpoint>
 ```
 
 ### Browser-facing work
 
-Browser-facing work needs browser verification, not only `npm run build`.
+Browser-facing work needs browser verification, not only a build check.
 
 Check:
 
 ```txt
 landing page
 signup/login
-dashboard
-persona creation
-persona detail
-live chat
-consent/succession
-billing paused state
-privacy/terms/404
+primary user flows
+main app view
 mobile viewport
 console errors
 network errors
-WebSocket connection
+real-time connections (if applicable)
 ```
 
 ---
@@ -284,10 +249,9 @@ Were forbidden files untouched?
 Are tests meaningful?
 Are migrations safe/idempotent?
 Are secrets exposed?
-Does this break private VPC deployment?
-Does this break WebSocket/live path?
-Does this break persona fidelity?
-Does this create unsupported facts or memory fabrication risk?
+Does this break the deployment target?
+Does this break any real-time or live-path logic?
+Does this violate any domain-critical correctness rules?
 ```
 
 For risky backend work, use a second model or separate reviewer.
@@ -303,12 +267,10 @@ Common docs:
 ```txt
 PROGRESS.md
 README.md
-CLAUDE.md
-PERSONA_SPEC.md
+CLAUDE.md or AGENTS.md
 docs/runbook.md
 docs/architecture.md
-backend/.env.example
-frontend/.env.example
+.env.example files
 ```
 
 Do not create new markdown files unless the new document has a clear long-term role.
@@ -326,11 +288,11 @@ Use these lightweight modes instead of generic prompting.
 Use before ambiguous product work.
 
 ```txt
-Act as a product reviewer for Living Forever AI.
+Act as a product reviewer for this project.
 
 Check:
 1. What user pain does this solve?
-2. Is it needed for the next demo?
+2. Is it needed for the next milestone?
 3. What is the smallest useful version?
 4. What trust/safety risk does it create?
 5. What can be deferred?
@@ -361,36 +323,35 @@ Return blockers, risks, and implementation slices.
 Do not code.
 ```
 
-### Persona Fidelity Review
+### Domain Integrity Review
 
-Use for memory, ingestion, correction, and retrieval.
+Use for domain-critical logic, data correctness, and retrieval or transformation pipelines.
 
 ```txt
-Act as the persona fidelity reviewer.
+Act as the domain integrity reviewer.
 
 Check:
-1. no fabrication outside verified memory
-2. source provenance
-3. correction audit trail
-4. listener-aware behavior
-5. no-memory fallback
-6. separation between ingestion-time and live-time logic
+1. no fabrication or output outside verified sources
+2. source provenance and traceability
+3. correction and audit trail
+4. fallback behavior when data is missing
+5. separation between write-time and read-time logic
 
-Flag any behavior that could make the twin say unsupported facts.
+Flag any behavior that violates the project's domain correctness rules.
 Do not code.
 ```
 
 ### Security Review
 
-Use for auth, Supabase, uploads, billing, and deployment.
+Use for auth, data access, uploads, billing, and deployment.
 
 ```txt
 Act as a security reviewer.
 
 Check:
 1. auth bypass risk
-2. service-role key exposure
-3. Supabase RLS assumptions
+2. credential or key exposure
+3. access control assumptions
 4. unsafe file upload paths
 5. webhook spoofing
 6. CORS mistakes
@@ -415,14 +376,10 @@ Test the app in a real browser.
 Flows:
 1. landing page
 2. signup/login
-3. dashboard
-4. create persona
-5. persona detail
-6. live chat
-7. consent/succession
-8. billing paused state
-9. privacy/terms/404
-10. mobile viewport
+3. primary user flows
+4. main app view
+5. error states and 404
+6. mobile viewport
 
 Check:
 - console errors
@@ -430,43 +387,31 @@ Check:
 - broken routes
 - localhost URLs in production
 - layout issues
-- WebSocket connection
+- real-time connections (if applicable)
 - broken buttons
 
 Report only unless explicitly told to fix.
 ```
 
-### VPC Deployment Review
+### Deployment Review
 
 Use before deploy/redeploy.
 
 ```txt
-Act as VPC deployment reviewer.
-
-Primary deployment target:
-- private VPC/VPS
-- Docker Compose
-- nginx
-- FastAPI backend
-- React frontend
-- Redis
-- arq worker
-- Supabase hosted
-- kishoreai.online
+Act as deployment reviewer.
 
 Check:
-1. Docker Compose services
-2. nginx proxy routes
-3. WebSocket upgrade headers
-4. frontend env URLs
-5. backend CORS
-6. PUBLIC_BASE_URL
-7. Redis/arq worker
-8. health endpoint
-9. secrets not committed
-10. deployment docs match reality
+1. all required services are defined
+2. reverse-proxy routes are correct
+3. real-time upgrade headers (if applicable)
+4. frontend env URLs point to production
+5. backend CORS is correct
+6. health endpoint is reachable
+7. secrets are not committed
+8. deployment docs match reality
 
-Do not assume Vercel or Render.
+Adapt checks to the project's actual deployment target.
+Do not assume a specific cloud provider or platform.
 ```
 
 ### Documentation Release Review
@@ -481,11 +426,10 @@ Inspect changed files and update only stale docs.
 Check:
 1. README
 2. PROGRESS.md
-3. CLAUDE.md
-4. PERSONA_SPEC.md
-5. docs/runbook.md
-6. docs/architecture.md
-7. backend/frontend .env.example files
+3. CLAUDE.md or AGENTS.md
+4. docs/runbook.md
+5. docs/architecture.md
+6. .env.example files
 
 Do not invent new architecture.
 Do not create new docs unless necessary.
@@ -530,12 +474,12 @@ Do not run multiple coding agents in parallel on:
 
 ```txt
 database migrations
-RLS/auth changes
+auth/access control changes
 billing/webhooks
-WebSocket/live path
-persona memory schema
+real-time or live-path logic
+domain-critical schema changes
 correction/versioning logic
-ingestion worker changes
+data ingestion pipeline changes
 retrieval/ranking logic
 ```
 
@@ -609,10 +553,10 @@ non-critical refactors
 
 ```txt
 migrations
-billing
-RLS
-WebSocket auth
-persona memory correction
+billing changes
+auth/access control changes
+real-time or live-path logic
+domain-critical data corrections
 retrieval rewrite
 production deploy merge
 ```
@@ -630,10 +574,10 @@ Recommended:
 ```txt
 product-review
 eng-review
-persona-fidelity-review
+domain-integrity-review
 security-review
 browser-qa
-vpc-deploy-review
+deploy-review
 document-release
 backend-safe-slice
 frontend-safe-slice
@@ -644,10 +588,10 @@ Skills should encode process, not all project knowledge.
 Project knowledge belongs in:
 
 ```txt
-PERSONA_SPEC.md
 docs/architecture.md
 docs/runbook.md
 PROGRESS.md
+project-specific spec files
 ```
 
 ---
@@ -665,11 +609,10 @@ small commits = required
 Recommended branch names:
 
 ```txt
-feature/correction-loop
-feature/consent-succession
-fix/vpc-deploy-docs
-test/retrieval-supersedes
-docs/ai-workflow
+feature/<feature-name>
+fix/<fix-description>
+test/<test-area>
+docs/<doc-topic>
 ```
 
 For Conductor:
@@ -694,22 +637,7 @@ git status
 git diff --stat
 ```
 
-Run relevant checks.
-
-Backend:
-
-```bash
-cd backend
-python -m pytest tests/ -q
-```
-
-Frontend:
-
-```bash
-cd frontend
-npx tsc --noEmit
-npm run build
-```
+Run relevant checks for your project (type checks, unit tests, build).
 
 Commit only intended files:
 
@@ -721,9 +649,9 @@ git commit -m "<type>: <clear message>"
 Examples:
 
 ```txt
-feat: add correction loop source records
-fix: exclude superseded memory units from retrieval
-docs: reconcile private VPC deployment guide
+feat: add data correction records
+fix: exclude stale entries from retrieval
+docs: reconcile deployment guide
 test: cover ingestion provenance handoff
 ```
 
@@ -751,103 +679,43 @@ uncommitted-partial
 nothing changed
 ```
 
-4. Run tests before building on top:
-
-```bash
-cd backend && python -m pytest tests/ -q
-cd frontend && npx tsc --noEmit && npm run build
-```
+4. Run project tests before building on top.
 
 5. Continue only if the tree is clean or the partial state is understood.
 
 ---
 
-## 18. Production Deployment Checklist
+## 18. Deployment Checklist
 
-Primary deployment target:
-
-```txt
-private VPC / VPS
-Docker Compose
-nginx
-kishoreai.online
-```
-
-Required services:
+Consumer projects should define their own deployment checklist. A generic pattern:
 
 ```txt
-frontend
-backend
-redis
-arq worker
-nginx
+Deployment target: <cloud/VPS/managed service>
+Required services: <list>
+Required env vars: <list>
+Optional env vars: <list>
+Health check: curl <health endpoint>
 ```
 
-Required backend env:
-
-```txt
-SUPABASE_URL
-SUPABASE_ANON_KEY
-SUPABASE_SERVICE_ROLE_KEY
-GROQ_API_KEY
-ELEVENLABS_API_KEY
-ELEVENLABS_VOICE_ID
-REDIS_URL
-CORS_ORIGINS=https://kishoreai.online
-PUBLIC_BASE_URL=https://kishoreai.online
-ENVIRONMENT=production
-```
-
-Optional backend env:
-
-```txt
-DID_API_KEY
-SIMLI_API_KEY
-TAVUS_API_KEY
-DEEPGRAM_API_KEY
-STRIPE_SECRET_KEY
-STRIPE_WEBHOOK_SECRET
-```
-
-Required frontend env:
-
-```txt
-VITE_SUPABASE_URL
-VITE_SUPABASE_ANON_KEY
-VITE_API_BASE_URL=https://kishoreai.online
-VITE_WS_BASE_URL=wss://kishoreai.online
-```
-
-nginx must support WebSockets:
-
-```nginx
-proxy_set_header Upgrade $http_upgrade;
-proxy_set_header Connection "upgrade";
-```
+Define this in the consumer project's `docs/runbook.md` or deployment docs.
 
 ---
 
-## 19. Demo Verification Script
+## 19. App Verification Checklist
 
 Run after deployment.
 
 ```txt
-1. Open https://kishoreai.online
+1. Open the app root URL
 2. Sign up or log in
-3. Open dashboard
-4. Create persona
-5. Open persona detail
-6. Start live chat
-7. Confirm WebSocket connects
-8. Confirm response appears
-9. Confirm voice output if configured
-10. Open consent/succession page
-11. Open billing page but do not click Upgrade if Stripe is paused
-12. Open privacy/terms
-13. Open invalid route and confirm 404
-14. Test mobile viewport
-15. Check console/network errors
+3. Complete primary user flows
+4. Confirm real-time connections (if applicable)
+5. Open error/404 pages
+6. Test mobile viewport
+7. Check console and network errors
 ```
+
+Consumer projects should expand this with product-specific flows.
 
 ---
 
@@ -867,39 +735,31 @@ Do not automate yet:
 
 ```txt
 schema migrations
-persona correction logic
-retrieval rewrite
-billing webhook changes
+domain-critical data corrections
+retrieval or ranking rewrites
+billing/webhook changes
 production deploy merge
 ```
 
 ---
 
-## 21. Immediate Setup Plan
+## 21. Adoption Checklist
 
-### Phase 1 — Add this workflow doc
+Use this when adopting kstack for a new project.
 
-Create:
+### Phase 1 — Reference this workflow doc
 
-```txt
-docs/ai-operating-system.md
-```
+Add a reference to `docs/ai-operating-system.md` in the consumer project's `AGENTS.md`.
 
-### Phase 2 — Add a short AGENTS.md
+### Phase 2 — Add a short project AGENTS.md
 
-Create:
-
-```txt
-AGENTS.md
-```
-
-It should point agents to:
+The project `AGENTS.md` should point agents to:
 
 ```txt
 CLAUDE.md
 PROGRESS.md
-PERSONA_SPEC.md
 docs/ai-operating-system.md
+project-specific spec or architecture files
 ```
 
 ### Phase 3 — Add small project skills
@@ -909,9 +769,9 @@ Create lightweight local skills for:
 ```txt
 product-review
 eng-review
-persona-fidelity-review
+domain-integrity-review
 browser-qa
-vpc-deploy-review
+deploy-review
 document-release
 ```
 
@@ -934,8 +794,6 @@ Only allow Conductor to edit code after the workflow is stable.
 ## 22. Golden Rule
 
 A fast AI workflow is useful only if it creates less chaos than it removes.
-
-For this product:
 
 ```txt
 speed is good
